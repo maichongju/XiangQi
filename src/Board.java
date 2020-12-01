@@ -3,7 +3,9 @@ import javax.swing.*;
 import java.awt.*;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
+import java.io.BufferedInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.logging.Level;
@@ -106,8 +108,6 @@ public class Board extends JPanel implements MouseListener {
                             }
                         }
 
-
-                        System.out.println(c.getCoord() + " Clicked");
                     }
 
                     @Override
@@ -221,7 +221,8 @@ public class Board extends JPanel implements MouseListener {
     private void playSound(String name){
         if (!sideBar.isMuted()){
             try {
-                AudioInputStream audioInputStream = AudioSystem.getAudioInputStream(getClass().getResourceAsStream(name));
+                InputStream bufferedIn = new BufferedInputStream(getClass().getResourceAsStream(name));
+                AudioInputStream audioInputStream = AudioSystem.getAudioInputStream(bufferedIn);
                 Clip clip = AudioSystem.getClip();
                 clip.open(audioInputStream);
                 clip.start();
