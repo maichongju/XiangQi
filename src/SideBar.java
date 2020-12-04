@@ -8,9 +8,15 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
+import java.io.File;
+import java.io.FileWriter;
 import java.io.IOException;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
+import java.util.Base64;
 import java.util.List;
+import java.util.Objects;
 
 public class SideBar extends JPanel implements MouseListener{
     private Board board;
@@ -57,7 +63,11 @@ public class SideBar extends JPanel implements MouseListener{
         btnSaveGame.setMinimumSize(buttonDimension);
         btnSaveGame.setMaximumSize(buttonDimension);
         btnSaveGame.setPreferredSize(buttonDimension);
-        btnSaveGame.setEnabled(false);
+//        btnSaveGame.setEnabled(false);
+        btnSaveGame.addActionListener(e -> {
+            listStepLog.saveToFile(board.getStartDate());
+        });
+
 
         btnLoad.setAlignmentX(Component.CENTER_ALIGNMENT);
         btnLoad.setMinimumSize(buttonDimension);
@@ -199,8 +209,73 @@ class StepLogList extends JList<Step> implements MouseListener{
         ensureIndexIsVisible(listModel.size()-1);
     }
 
-    public void saveToFile(){
+    /**
+     * Save the Steps to file. Format can be found in readme
+     */
+    public void saveToFile(String startDate){
+        StringBuilder stepString = new StringBuilder();
+        for (int i = 0; i < listModel.getSize(); i++ ){
+            Step s = listModel.elementAt(i);
+            stepString.append(s.toFile());
+        }
+        String md5 = getMD5(stepString.toString());
+        String rounds = String.format("%04d",listModel.getSize());
+        File file = new File(startDate + ".save");
+        try {
+            if (file.createNewFile()){
+                FileWriter writer = new FileWriter(startDate + ".save");
+                writer.write(md5 +
+                        startDate +
+                        rounds +
+                        stepString.toString()
+                        );
+                writer.close();
+                JOptionPane.showMessageDialog(this.getParent(),"Saved to file " + startDate + ".save");
+            }else{
+                JOptionPane.showMessageDialog(this.getParent(), "Failed to save file " + startDate + ".save"
+                        ,"Error",JOptionPane.ERROR_MESSAGE);
+            }
+        } catch (IOException e) {
+            JOptionPane.showMessageDialog(this.getParent(), "Failed to save file " + startDate + ".save"
+                    ,"Error",JOptionPane.ERROR_MESSAGE);
+            e.printStackTrace();
+        }
+    }
 
+    public void loadFile(String file){
+
+    }
+
+    /**
+     * Return the md5 value for the given string
+     * @param s input string
+     * @return md5 string
+     */
+    private String getMD5(String s){
+        try {
+            MessageDigest md = MessageDigest.getInstance("MD5");
+            md.update(s.getBytes());
+            byte[] digest = md.digest();
+            StringBuilder md5Builder = new StringBuilder();
+            for (byte b: digest){
+                md5Builder.append(String.format("%02x",Byte.parseByte(Integer.toString(b))));
+            }
+            return md5Builder.toString();
+
+        } catch (NoSuchAlgorithmException e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
+
+    /**
+     * Verify the MD5 of the given string match the given MD5 value
+     * @param input input string
+     * @param md5 MD5
+     * @return true if match, false otherwise
+     */
+    private boolean validMD5(String input, String md5){
+        return Objects.equals(getMD5(input), md5);
     }
 
     /**
@@ -257,6 +332,9 @@ class Step{
         to = t;
     }
 
+    public String toFile(){
+        return from.toString() + to.toString();
+    }
     @Override
     public String toString() {
         return from + " - " + to;

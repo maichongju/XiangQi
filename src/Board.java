@@ -6,10 +6,13 @@ import java.awt.event.MouseListener;
 import java.io.BufferedInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.logging.SimpleFormatter;
 
 /*
         ^
@@ -33,12 +36,14 @@ public class Board extends JPanel implements MouseListener {
     private final List<Cell> hintList = new ArrayList<>();
     private final SideBar sideBar;
     private Dimension dimension;
+    private String startDate;
 
     public Board(Dimension dimension, SideBar sideBar) {
         this.dimension = dimension;
         this.sideBar = sideBar;
         startX = (dimension.width - (cellSize * 8)) / 2;
         startY = (dimension.height - (cellSize * 9)) / 2; // Title bar need
+        updateStartDate();
 
         // Board Init
         for (int y = 0; y < 10; y++) {
@@ -53,7 +58,7 @@ public class Board extends JPanel implements MouseListener {
                 c.addMouseListener(new MouseListener() {
                     @Override
                     public void mouseClicked(MouseEvent e) {
-                        if (!gameOver){
+                        if (!gameOver) {
                             // Other cell selected, clean old cell
                             if (selectedCell != null) {
                                 Cell oldCell = selectedCell;
@@ -67,13 +72,13 @@ public class Board extends JPanel implements MouseListener {
                                         gameOver = true;
                                         JOptionPane.showMessageDialog(null,
                                                 c.getStone().getColor() == Stone.Color.RED ?
-                                                        "Black Win":
+                                                        "Black Win" :
                                                         "Red Win"
                                         );
                                     } else {
                                         moveStone(selectedCell.getStone(), c);
                                         sideBar.changePlayerTurn();
-                                        if (isChecked(c.getStone())){
+                                        if (isChecked(c.getStone())) {
                                             playSound("/audio/danger.wav");
                                         }
                                     }
@@ -85,7 +90,7 @@ public class Board extends JPanel implements MouseListener {
                                     // SUCCESS CASE
                                     // Step Printing
                                     System.out.println(oldCell.getCoord() + " - " + c.getCoord());
-                                    sideBar.addStep(oldCell.getCoord(),c.getCoord());
+                                    sideBar.addStep(oldCell.getCoord(), c.getCoord());
                                 } else {
                                     cleanHints();
                                     if (c.hasStone() && c.getStone().getColor() == playerTurn) {
@@ -218,8 +223,8 @@ public class Board extends JPanel implements MouseListener {
 
     }
 
-    private void playSound(String name){
-        if (!sideBar.isMuted()){
+    private void playSound(String name) {
+        if (!sideBar.isMuted()) {
             try {
                 InputStream bufferedIn = new BufferedInputStream(getClass().getResourceAsStream(name));
                 AudioInputStream audioInputStream = AudioSystem.getAudioInputStream(bufferedIn);
@@ -246,7 +251,7 @@ public class Board extends JPanel implements MouseListener {
                 RenderingHints.VALUE_ANTIALIAS_OFF);
         antiGraph.setRenderingHints(rhAntiOFF);
         antiGraph.setColor(new Color(81, 59, 1));
-        antiGraph.drawRect(2,2,dimension.width-5,dimension.height-5);
+        antiGraph.drawRect(2, 2, dimension.width - 5, dimension.height - 5);
 
         RenderingHints rh = new RenderingHints(
                 RenderingHints.KEY_ANTIALIASING,
@@ -309,10 +314,10 @@ public class Board extends JPanel implements MouseListener {
         }
     }
 
-    public boolean isChecked(Stone s){
+    public boolean isChecked(Stone s) {
         List<Cell> possible = s.getMovableCells(this);
-        for (Cell c: possible){
-            if (c.hasStone() && c.getStone().isKing() && c.getStone().getColor() != s.getColor()){
+        for (Cell c : possible) {
+            if (c.hasStone() && c.getStone().isKing() && c.getStone().getColor() != s.getColor()) {
                 return true;
             }
         }
@@ -322,15 +327,29 @@ public class Board extends JPanel implements MouseListener {
     /**
      * Reset the board to new game status
      */
-    public void reset(){
-        for (List<Cell> row: grid){
-            for (Cell cell: row){
+    public void reset() {
+        for (List<Cell> row : grid) {
+            for (Cell cell : row) {
                 cell.reset();
                 cell.repaint();
             }
         }
         setDefaultStone();
+        updateStartDate();
         playerTurn = Stone.Color.RED;
+    }
+
+    public String getStartDate() {
+        return startDate;
+    }
+
+    /**
+     * Update the start date for the current game
+     */
+    private void updateStartDate() {
+        SimpleDateFormat formatter = new SimpleDateFormat("yyyyMMddHHmmss");
+        Date date = new Date(System.currentTimeMillis());
+        startDate = formatter.format(date);
     }
 
     /**
